@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">My Profile</div>
+</div>
+
+<div style="max-width: 600px;">
+  <div class="card">
+    <div class="card-head dark">Profile Information</div>
+    <div class="card-body">
+      <div style="margin-bottom: 30px;">
+        <div>
+          <h2 style="margin: 0; color: var(--blue); font-size: 24px;">{{ user.full_name or user.username }}</h2>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <span class="badge b-admin">{{ user.role | capitalize }}</span>
+            {% if user.department %}
+              <span class="badge b-employee">{{ user.department }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="meta-row" style="border-top: 1px solid var(--border); padding-top: 20px;">
+        <div class="meta-item" style="flex: 1; min-width: 200px;">
+          <div class="meta-label">Username</div>
+          <div class="meta-value" style="font-size: 15px;">{{ user.username }}</div>
+        </div>
+        <div class="meta-item" style="flex: 1; min-width: 200px;">
+          <div class="meta-label">Email Address</div>
+          <div class="meta-value" style="font-size: 15px;">{{ user.email }}</div>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-item" style="flex: 1; min-width: 200px;">
+          <div class="meta-label">Department</div>
+          <div class="meta-value" style="font-size: 15px;">{{ user.department or 'Not Set' }}</div>
+        </div>
+        <div class="meta-item" style="flex: 1; min-width: 200px;">
+          <div class="meta-label">Member Since</div>
+          <div class="meta-value" style="font-size: 15px;">{{ user.created_at.strftime('%B %d, %Y') if user.created_at else '--' }}</div>
+        </div>
+      </div>
+
+      {% if user.role == 'admin' %}
+      <div class="meta-row">
+        <div class="meta-item" style="flex: 1;">
+          <div class="meta-label">IT Specialization</div>
+          <div class="meta-value">
+            <span class="badge" style="background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid);">
+              {{ user.specialization or 'General IT' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+        <a href="{{ url_for('edit_profile') }}" class="btn btn-primary btn-sm">Edit Profile</a>
+        <a href="{{ url_for('change_password') }}" class="btn btn-outline btn-sm">Update Password</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">Manage Users</div>
+  <span style="font-size:13px; color:var(--muted);">{{ users|length }} total accounts</span>
+</div>
+
+<div class="filter-bar">
+  <label>Search:</label>
+  <form method="GET" style="display:flex; gap:8px; flex:1;">
+    <input type="text" name="q" placeholder="Search name, username, email or dept..." 
+           value="{{ search_q or '' }}" style="flex:1; max-width:400px;">
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if search_q %}
+      <a href="{{ url_for('manage_users') }}" class="btn btn-outline btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header dark">All Accounts</div>
+  <div class="card-body flush">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Full Name</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Dept</th>
+            <th>Role</th>
+            <th>Specialization</th>
+            <th>Status</th>
+            <th>Registered</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td style="color:var(--muted);">#{{ u.id }}</td>
+            <td style="font-weight:600;">{{ u.full_name or '--' }}</td>
+            <td>{{ u.username }}</td>
+            <td style="font-size:12px; color:var(--muted);">{{ u.email or '--' }}</td>
+            <td style="font-size:13px; font-weight:500;">{{ u.department or '--' }}</td>
+            <td>
+              {% if u.role == 'admin' %}
+                <span class="badge b-admin">Admin</span>
+              {% else %}
+                <span class="badge b-employee">Employee</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.specialization %}
+                <span class="badge"
+                  style="{% if u.specialization == 'Hardware' %}background:#fef2f2;color:#991b1b;border:1px solid #fecaca;
+                         {% elif u.specialization == 'Software' %}background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
+                         {% elif u.specialization == 'Network' %}background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;
+                         {% else %}background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;{% endif %}">
+                  {{ u.specialization }}
+                </span>
+              {% else %}
+                <span style="color:#9ca3af; font-size:12px;">--</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.pending_approval %}
+                <span class="badge badge-warning" style="background:#fff7ed; color:#c2410c; border:1px solid #fdba74;">Pending Approval</span>
+              {% elif u.is_active %}
+                <span class="badge b-active">Active</span>
+              {% else %}
+                <span class="badge b-inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td style="font-size:12px; color:var(--muted);">
+              {{ u.created_at.strftime('%b %d, %Y') if u.created_at else '--' }}
+            </td>
+            <td>
+              <div style="display:flex; gap:5px; flex-wrap:wrap;">
+
+                {% if u.pending_approval %}
+                  <form method="POST" action="{{ url_for('approve_user', user_id=u.id) }}">
+                    <button class="btn btn-success btn-xs">Approve</button>
+                  </form>
+                  <form method="POST" action="{{ url_for('reject_user', user_id=u.id) }}">
+                    <button class="btn btn-danger btn-xs" onclick="return confirm('Reject this request?')">Reject</button>
+                  </form>
+                {% else %}
+                  <form method="POST" action="{{ url_for('toggle_user', user_id=u.id) }}">
+                    {% if u.is_active %}
+                      <button class="btn btn-danger btn-xs"
+                              onclick="return confirm('Deactivate {{ u.username }}?')">Deactivate</button>
+                    {% else %}
+                      <button class="btn btn-success btn-xs">Activate</button>
+                    {% endif %}
+                  </form>
+
+                  {% if u.role != 'admin' %}
+                  <form method="POST" action="{{ url_for('make_admin', user_id=u.id) }}">
+                    <button class="btn btn-outline btn-xs"
+                            onclick="return confirm('Promote {{ u.username }} to Admin?')">Make Admin</button>
+                  </form>
+                  {% endif %}
+                {% endif %}
+
+                {% if u.role == 'admin' and not u.pending_approval %}
+                <form method="POST" action="{{ url_for('set_specialization', user_id=u.id) }}"
+                      style="display:flex; gap:4px;">
+                  <select name="specialization"
+                          style="padding:2px 6px; font-size:11px; border-radius:5px; border:1px solid var(--border);">
+                    <option value="">No spec</option>
+                    <option value="Hardware" {% if u.specialization == 'Hardware' %}selected{% endif %}>Hardware</option>
+                    <option value="Software" {% if u.specialization == 'Software' %}selected{% endif %}>Software</option>
+                    <option value="Network"  {% if u.specialization == 'Network'  %}selected{% endif %}>Network</option>
+                    <option value="Other"    {% if u.specialization == 'Other'    %}selected{% endif %}>Other</option>
+                  </select>
+                  <button class="btn btn-primary btn-xs">Set</button>
+                </form>
+                {% endif %}
+
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

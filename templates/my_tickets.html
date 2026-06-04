@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">My Tickets</div>
+  <a href="{{ url_for('new_ticket') }}" class="btn btn-primary">+ New Ticket</a>
+</div>
+
+<div class="filter-bar">
+  <label>Filter:</label>
+  <form method="GET" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <input type="text" name="q" placeholder="Search tickets..."
+           value="{{ search_q }}" style="min-width:160px;">
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Status</option>
+      <option value="Open"        {% if status_f == 'Open'        %}selected{% endif %}>Open</option>
+      <option value="In Progress" {% if status_f == 'In Progress' %}selected{% endif %}>In Progress</option>
+      <option value="Closed"      {% if status_f == 'Closed'      %}selected{% endif %}>Closed</option>
+    </select>
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All Categories</option>
+      <option value="Hardware" {% if category_f == 'Hardware' %}selected{% endif %}>Hardware</option>
+      <option value="Software" {% if category_f == 'Software' %}selected{% endif %}>Software</option>
+      <option value="Network"  {% if category_f == 'Network'  %}selected{% endif %}>Network</option>
+      <option value="Other"    {% if category_f == 'Other'    %}selected{% endif %}>Other</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if status_f or category_f or search_q %}
+      <a href="{{ url_for('my_tickets') }}" class="btn btn-outline btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header dark">My Submitted Tickets ({{ total }})</div>
+  <div class="card-body flush">
+
+    {% if tickets %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Category</th>
+            <th>Priority</th>
+            <th>Date Submitted</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets %}
+          <tr>
+            <td style="color:var(--muted);">#{{ t.id }}</td>
+            <td style="font-weight:600;">{{ t.title }}</td>
+            <td>
+              {% if t.status == 'Open' %}<span class="badge b-open">Open</span>
+              {% elif t.status == 'In Progress' %}<span class="badge b-inprog">In Progress</span>
+              {% else %}<span class="badge b-closed">Closed</span>{% endif %}
+            </td>
+            <td>{{ t.category }}</td>
+            <td>
+              {% if t.priority == 'Urgent' %}<span class="badge b-urgent">Urgent</span>
+              {% elif t.priority == 'High' %}<span class="badge b-high">High</span>
+              {% elif t.priority == 'Medium' %}<span class="badge b-medium">Medium</span>
+              {% else %}<span class="badge b-low">Low</span>{% endif %}
+            </td>
+            <td style="color:var(--muted); font-size:12px;">
+              {{ t.created_at.strftime('%b %d, %Y') if t.created_at else '--' }}
+            </td>
+            <td>
+              <a href="{{ url_for('view_ticket', ticket_id=t.id) }}" class="btn btn-outline btn-sm">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pager">
+      <span>Showing {{ (page-1)*15+1 }}–{{ [page*15, total]|min }} of {{ total }}</span>
+      <ul class="pager-links">
+        <li><a href="?page={{ page-1 }}&status={{ status_f }}&category={{ category_f }}&q={{ search_q }}"
+               class="{% if page == 1 %}disabled{% endif %}">Prev</a></li>
+        {% for p in range(1, total_pages+1) %}
+          <li><a href="?page={{ p }}&status={{ status_f }}&category={{ category_f }}&q={{ search_q }}"
+                 class="{% if p == page %}active{% endif %}">{{ p }}</a></li>
+        {% endfor %}
+        <li><a href="?page={{ page+1 }}&status={{ status_f }}&category={{ category_f }}&q={{ search_q }}"
+               class="{% if page == total_pages %}disabled{% endif %}">Next</a></li>
+      </ul>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align:center; padding:48px; color:var(--muted);">
+      <p style="font-weight:600; margin-bottom:8px;">No tickets found.</p>
+      {% if status_f or category_f or search_q %}
+        <a href="{{ url_for('my_tickets') }}" class="btn btn-outline btn-sm">Clear filters</a>
+      {% else %}
+        <a href="{{ url_for('new_ticket') }}" class="btn btn-primary btn-sm">Submit your first ticket</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

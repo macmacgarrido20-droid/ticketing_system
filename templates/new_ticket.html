@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-top">
+  <div class="page-title">Submit New Ticket</div>
+  <a href="{{ url_for('my_tickets') }}" class="btn btn-outline btn-sm">Back</a>
+</div>
+
+<div style="max-width:700px;">
+  <div class="card">
+    <div class="card-head dark">Ticket Details</div>
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data" id="ticketForm">
+
+        <div class="form-group">
+          <label>Submitted by</label>
+          <input type="text" value="{{ session['fullname'] or session['username'] }}" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Subject <span class="req">*</span></label>
+          <input type="text" name="title" placeholder="Brief description of the issue" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category <span class="req">*</span></label>
+            <select name="category" id="categorySelect" required onchange="filterAssignees()">
+              <option value="">— Select —</option>
+              <option value="Hardware">Hardware</option>
+              <option value="Software">Software</option>
+              <option value="Network">Network</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority <span class="req">*</span></label>
+            <select name="priority" required>
+              <option value="Urgent">Urgent (2h SLA)</option>
+              <option value="High">High (8h SLA)</option>
+              <option value="Medium" selected>Medium (24h SLA)</option>
+              <option value="Low">Low (72h SLA)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Assignee panel — shown after category is picked -->
+        <div class="form-group" id="assigneeGroup" style="display:none;">
+          <label>Preferred Assignee</label>
+          <div id="assigneeCards" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;">
+            <!-- Filled by JS -->
+          </div>
+          <input type="hidden" name="preferred_assignee" id="preferredAssignee">
+          <div class="form-hint" style="margin-top:6px;">
+            Optional — admin will confirm the final assignment.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description <span class="req">*</span></label>
+          <textarea name="description" placeholder="Describe the issue in detail..." rows="5" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Attachment <span style="color:#6b7280; font-weight:400;">(optional)</span></label>
+          <input type="file" name="attachment" accept=".png,.jpg,.jpeg,.gif,.pdf,.docx,.txt">
+          <div class="form-hint">Allowed file types: PNG, JPG, GIF, PDF, DOCX, TXT</div>
+        </div>
+
+        <hr class="divider">
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="btn btn-primary">Submit Ticket</button>
+          <a href="{{ url_for('my_tickets') }}" class="btn btn-outline">Cancel</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.assignee-card {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  min-width: 120px;
+  text-align: center;
+  background: white;
+}
+.assignee-card:hover { border-color: var(--blue); background: var(--blue-light); }
+.assignee-card.selected { border-color: var(--blue); background: var(--blue-light); box-shadow: 0 0 0 3px rgba(43,57,144,0.1); }
+.assignee-card.dimmed { opacity: .35; pointer-events: none; }
+.ac-name { font-size: 13px; font-weight: 600; color: var(--blue); }
+.ac-spec { font-size: 11px; color: #6b7280; margin-top:2px; }
+.ac-match { font-size: 10px; font-weight: 600; color: #16a34a; margin-top:4px; letter-spacing:.03em; text-transform:uppercase; }
+.ac-all   { font-size: 10px; color: #9ca3af; margin-top:4px; }
+</style>
+
+<script>
+// Staff list from backend — contains id, full_name, specialization
+var staffList = {{ staff_list | tojson }};
+
+// Category → specialization mapping
+var catSpec = {
+  "Hardware": "Hardware",
+  "Software": "Software",
+  "Network":  "Network",
+  "Other":    null   // null = show all
+};
+
+function filterAssignees() {
+  var cat      = document.getElementById('categorySelect').value;
+  var group    = document.getElementById('assigneeGroup');
+  var cards    = document.getElementById('assigneeCards');
+  var hiddenIn = document.getElementById('preferredAssignee');
+
+  hiddenIn.value = '';
+
+  if (!cat) {
+    group.style.display = 'none';
+    cards.innerHTML = '';
+    return;
+  }
+
+  group.style.display = 'block';
+
+  var matchSpec = catSpec[cat];   // the specialization that matches this category
+  var html = '';
+
+  // "Any available" card first
+  html += '<div class="assignee-card" data-id="" onclick="selectAssignee(this, \'\')">'
+        + '<div class="ac-name">Any Available</div>'
+        + '<div class="ac-all">Admin decides</div>'
+        + '</div>';
+
+  staffList.forEach(function(s) {
+    var spec     = s.specialization || 'General';
+    var isMatch  = matchSpec ? (spec === matchSpec) : true;
+    var dimClass = (!isMatch && matchSpec) ? ' dimmed' : '';
+    var badge    = isMatch && matchSpec
+                 ? '<div class="ac-match">Recommended</div>'
+                 : '<div class="ac-all">' + spec + '</div>';
+
+    html += '<div class="assignee-card' + dimClass + '" data-id="' + s.id + '" onclick="selectAssignee(this, \'' + s.id + '\')">'
+          + '<div class="ac-name">' + (s.full_name || s.username) + '</div>'
+          + '<div class="ac-spec">' + spec + '</div>'
+          + badge
+          + '</div>';
+  });
+
+  cards.innerHTML = html;
+
+  // Auto-select the first recommended match
+  var recommended = cards.querySelector('.assignee-card:not(.dimmed):not(:first-child)');
+  if (recommended && matchSpec) {
+    selectAssignee(recommended, recommended.dataset.id);
+  }
+}
+
+function selectAssignee(el, id) {
+  document.querySelectorAll('.assignee-card').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+  el.classList.add('selected');
+  document.getElementById('preferredAssignee').value = id;
+}
+</script>
+
+{% endblock %}

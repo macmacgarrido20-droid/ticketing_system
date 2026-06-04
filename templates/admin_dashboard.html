@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">Dashboard</div>
+  <a href="{{ url_for('admin_tickets') }}" class="btn btn-primary btn-sm">View All Tickets</a>
+</div>
+
+<!-- Interactive Scorecard -->
+<div class="scorecard-bar" style="grid-template-columns: repeat(11, auto); justify-content: space-between;">
+  <div class="scorecard-item sc-blue">
+    <div class="sc-num">{{ stats.unresolved }}</div>
+    <div class="sc-label">Unresolved</div>
+  </div>
+  <div class="scorecard-sep"></div>
+  <div class="scorecard-item sc-red">
+    <div class="sc-num">{{ stats.overdue }}</div>
+    <div class="sc-label">Overdue</div>
+  </div>
+  <div class="scorecard-sep"></div>
+  <div class="scorecard-item sc-orange">
+    <div class="sc-num">{{ stats.due_today }}</div>
+    <div class="sc-label">Due today</div>
+  </div>
+  <div class="scorecard-sep"></div>
+  <div class="scorecard-item sc-amber">
+    <div class="sc-num">{{ stats.open }}</div>
+    <div class="sc-label">Open</div>
+  </div>
+  <div class="scorecard-sep"></div>
+  <div class="scorecard-item" style="color: #64748b;">
+    <div class="sc-num">{{ stats.on_hold }}</div>
+    <div class="sc-label">On hold</div>
+  </div>
+  <div class="scorecard-sep"></div>
+  <div class="scorecard-item sc-purple">
+    <div class="sc-num">{{ stats.unassigned }}</div>
+    <div class="sc-label">Unassigned</div>
+  </div>
+</div>
+
+<!-- SLA Health Section -->
+<div style="margin-bottom:20px;">
+  <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    SLA Performance
+  </div>
+  <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat-box red">
+      <div class="stat-label">Breached</div>
+      <div class="stat-number">{{ stats.sla_breached or 0 }}</div>
+      <div style="font-size:11px; color:var(--red); margin-top:4px; font-weight:500;">Action Required</div>
+    </div>
+    <div class="stat-box orange">
+      <div class="stat-label">Warning (<2h)</div>
+      <div class="stat-number">{{ stats.sla_warning or 0 }}</div>
+      <div style="font-size:11px; color:var(--orange); margin-top:4px; font-weight:500;">Expiring Soon</div>
+    </div>
+    <div class="stat-box green">
+      <div class="stat-label">On Track</div>
+      <div class="stat-number">{{ (stats.open + stats.in_progress) - (stats.sla_breached or 0) - (stats.sla_warning or 0) }}</div>
+      <div style="font-size:11px; color:var(--green); margin-top:4px; font-weight:500;">Healthy</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts and Categories -->
+<div class="dash-row3" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="card">
+    <div class="card-head">IT Staff Workload</div>
+    <div class="card-body no-pad">
+      {% if workload %}
+        {% for staff in workload %}
+        <div class="cat-row">
+          <div class="cat-name" style="min-width: 100px;">{{ staff.username }}</div>
+          <div class="cat-bar-wrap">
+            <div class="cat-bar-inner" style="background: var(--orange); width: {{ [staff.active_count * 10, 100]|min }}%;"></div>
+          </div>
+          <div class="cat-count">{{ staff.active_count }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:20px; text-align:center; color:var(--text-muted);">No active assignments.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Tickets by Category</div>
+    <div class="card-body no-pad">
+      {% if by_category %}
+        {% for row in by_category %}
+        <div class="cat-row">
+          <div class="cat-name">{{ row.category }}</div>
+          <div class="cat-bar-wrap">
+            <div class="cat-bar-inner" style="width: {{ [(row.cnt / stats.total * 100)|int, 100]|min if stats.total else 0 }}%;"></div>
+          </div>
+          <div class="cat-count">{{ row.cnt }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="padding:20px; text-align:center; color:var(--text-muted);">No data available.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">Monthly Request Volume</div>
+    <div class="card-body" style="height: 250px; display: flex; flex-direction: column; justify-content: center;">
+      <canvas id="trendChart"></canvas>
+      <div style="text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 10px;">
+        Last 6 Months Trend
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent 5 tickets quick view -->
+<div class="card">
+  <div class="card-header dark" style="display:flex; justify-content:space-between; align-items:center;">
+    <span>Recent Tickets</span>
+    <a href="{{ url_for('admin_tickets') }}" style="font-size:12px; color:rgba(255,255,255,.7); text-decoration:none;">
+      View all &rarr;
+    </a>
+  </div>
+  <div class="card-body flush">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Subject</th>
+            <th>Submitted by</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in recent_tickets %}
+          <tr>
+            <td style="color:var(--muted);">#{{ t.id }}</td>
+            <td style="font-weight:600;">
+              <a href="{{ url_for('view_ticket', ticket_id=t.id) }}"
+                 style="color:var(--blue); text-decoration:none;">{{ t.title }}</a>
+            </td>
+            <td style="font-size:12px; color:var(--muted);">{{ t.requester }}</td>
+            <td>
+              {% if t.status == 'Open' %}<span class="badge b-open">Open</span>
+              {% elif t.status == 'In Progress' %}<span class="badge b-inprog">In Progress</span>
+              {% else %}<span class="badge b-closed">Closed</span>{% endif %}
+            </td>
+            <td>
+              {% if t.priority == 'Urgent' %}<span class="badge b-urgent">Urgent</span>
+              {% elif t.priority == 'High' %}<span class="badge b-high">High</span>
+              {% elif t.priority == 'Medium' %}<span class="badge b-medium">Medium</span>
+              {% else %}<span class="badge b-low">Low</span>{% endif %}
+            </td>
+            <td style="font-size:12px; color:var(--muted);">
+              {{ t.created_at.strftime('%b %d, %Y') if t.created_at else '--' }}
+            </td>
+            <td>
+              <a href="{{ url_for('view_ticket', ticket_id=t.id) }}" class="btn btn-outline btn-xs">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// Monthly Trend Chart
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for row in monthly_trend %}'{{ row.month_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+      label: 'Tickets Requested',
+      data: [{% for row in monthly_trend %}{{ row.count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37, 99, 235, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointBackgroundColor: '#2563eb'
+    }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+</script>
+
+{% endblock %}

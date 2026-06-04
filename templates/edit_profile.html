@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">Edit Profile</div>
+  <a href="{{ url_for('profile') }}" class="btn btn-outline btn-sm">Cancel</a>
+</div>
+
+<div style="max-width: 600px;">
+  <div class="card">
+    <div class="card-head dark">Update Profile Details</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" name="fullname" value="{{ user.full_name or '' }}" placeholder="Enter your full name" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" name="email" value="{{ user.email or '' }}" placeholder="Enter your work email" required>
+        </div>
+
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" name="department" value="{{ user.department or '' }}" placeholder="e.g. IT, HR, Marketing, Sales">
+          <div class="form-hint">Your department helps us route tickets more effectively.</div>
+        </div>
+
+        {% if user.role == 'admin' %}
+        <div class="form-group">
+          <label>IT Specialization <span class="req">*</span></label>
+          <select name="specialization" required>
+            <option value="Technical Support" {% if user.specialization == 'Technical Support' %}selected{% endif %}>Technical Support</option>
+            <option value="Network & Infrastructure" {% if user.specialization == 'Network & Infrastructure' %}selected{% endif %}>Network & Infrastructure</option>
+            <option value="Software & Applications" {% if user.specialization == 'Software & Applications' %}selected{% endif %}>Software & Applications</option>
+            <option value="Hardware Maintenance" {% if user.specialization == 'Hardware Maintenance' %}selected{% endif %}>Hardware Maintenance</option>
+            <option value="Security & Compliance" {% if user.specialization == 'Security & Compliance' %}selected{% endif %}>Security & Compliance</option>
+          </select>
+          <div class="form-hint">Choose your primary area of expertise.</div>
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" value="{{ user.username }}" readonly style="background: #f9fafb; cursor: not-allowed;">
+          <div class="form-hint">Username cannot be changed.</div>
+        </div>
+
+        <hr class="divider" style="margin: 24px 0;">
+        
+        <div style="display: flex; gap: 12px;">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{{ url_for('profile') }}" class="btn btn-outline">Discard Changes</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

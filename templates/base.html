@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MSSCO IT Helpdesk</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+
+    <a class="navbar-brand" href="{{ url_for('home') }}">
+      <div class="brand-logo-box">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="MSSCO Logo">
+      </div>
+      <div class="brand-title" style="margin-left: 5px;">Mustard Seed Systems Corporation</div>
+    </a>
+
+    <!-- Center nav links -->
+    <div class="navbar-center">
+      {% if session.get('role') == 'employee' %}
+
+        <a class="nav-link {% if request.endpoint in ['my_tickets','view_ticket','edit_ticket'] %}active{% endif %}"
+           href="{{ url_for('my_tickets') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          Tickets
+          {% if open_count | default(0) > 0 %}
+            <span class="nav-badge nav-badge-red">{{ open_count }}</span>
+          {% endif %}
+        </a>
+
+        <a class="nav-link {% if request.endpoint == 'new_ticket' %}active{% endif %}"
+           href="{{ url_for('new_ticket') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+          New Ticket
+        </a>
+
+      {% elif session.get('role') == 'admin' %}
+
+        <a class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
+           href="{{ url_for('admin_dashboard') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+          {% if open_count | default(0) > 0 %}
+            <span class="nav-badge nav-badge-red">{{ open_count }}</span>
+          {% endif %}
+        </a>
+
+        <a class="nav-link {% if request.endpoint in ['admin_tickets','view_ticket'] %}active{% endif %}"
+           href="{{ url_for('admin_tickets') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          Tickets
+        </a>
+
+        <a class="nav-link {% if request.endpoint == 'contacts' %}active{% endif %}"
+           href="{{ url_for('contacts') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Contacts
+        </a>
+
+        <a class="nav-link {% if request.endpoint == 'manage_users' %}active{% endif %}"
+           href="{{ url_for('manage_users') }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Users
+          {% if pending_count | default(0) > 0 %}
+            <span class="nav-badge nav-badge-amber">{{ pending_count }}</span>
+          {% endif %}
+        </a>
+
+      {% endif %}
+    </div>
+
+    <!-- Right: user info + sign out -->
+    <div class="navbar-right">
+      {% if session.get('role') %}
+        <a href="{{ url_for('profile') }}" class="nav-user-pill" style="text-decoration: none; cursor: pointer;">
+          <span class="nav-user-text">
+            {{ session.get('fullname') or session.get('username') }}
+            <span class="nav-user-role">({{ session.get('role')|capitalize }})</span>
+          </span>
+        </a>
+        <a class="btn-logout" href="{{ url_for('logout') }}">Sign Out</a>
+      {% endif %}
+    </div>
+
+  </div>
+</nav>
+
+<div class="main-content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="flash-list">
+        {% for category, message in messages %}
+          <li class="flash-item flash-{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<footer class="footer">
+  &copy; Mustard Seed Systems Corporation
+</footer>
+
+</body>
+</html>

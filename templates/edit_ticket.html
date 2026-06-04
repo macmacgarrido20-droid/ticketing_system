@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">Edit Ticket #{{ ticket.id }}</div>
+  <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline btn-sm">Cancel</a>
+</div>
+
+<div style="max-width:660px;">
+  <div class="card">
+    <div class="card-header dark">Edit Details</div>
+    <div class="card-body">
+      <form method="POST">
+
+        <div class="form-group">
+          <label>Subject <span class="req">*</span></label>
+          <input type="text" name="title" value="{{ ticket.title }}" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category <span class="req">*</span></label>
+            <select name="category" required>
+              {% for c in ['Hardware','Software','Network','Other'] %}
+                <option value="{{ c }}" {% if ticket.category == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority <span class="req">*</span></label>
+            <select name="priority" required>
+              {% for p in ['Urgent','High','Medium','Low'] %}
+                <option value="{{ p }}" {% if ticket.priority == p %}selected{% endif %}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description <span class="req">*</span></label>
+          <textarea name="description" rows="5" required>{{ ticket.description }}</textarea>
+        </div>
+
+        <hr>
+
+        <div style="display:flex; gap:10px;">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{{ url_for('view_ticket', ticket_id=ticket.id) }}" class="btn btn-outline">Cancel</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

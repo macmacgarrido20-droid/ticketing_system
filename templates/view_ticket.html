@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <div class="page-title">Ticket #{{ ticket.id }}</div>
+  <div style="display:flex; gap:8px;">
+    {% if session.get('role') == 'employee' and ticket.status == 'Open' %}
+      <a href="{{ url_for('edit_ticket', ticket_id=ticket.id) }}" class="btn btn-outline btn-sm">Edit</a>
+    {% endif %}
+    {% if session.get('role') == 'admin' %}
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline btn-sm">Back to Dashboard</a>
+    {% else %}
+      <a href="{{ url_for('my_tickets') }}" class="btn btn-outline btn-sm">Back to My Tickets</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+
+  <!-- Left: ticket info + comments -->
+  <div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header dark" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="display:flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.414a6 6 0 108.486 8.486L20.5 13"></path></svg>
+          {{ ticket.title }}
+        </span>
+        <span>
+          {% if ticket.status == 'Open' %}<span class="badge b-open">Open</span>
+          {% elif ticket.status == 'In Progress' %}<span class="badge b-inprog">In Progress</span>
+          {% else %}<span class="badge b-closed">Closed</span>{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="meta-grid">
+          <div class="meta-item">
+            <div class="meta-label">Submitted by</div>
+            <div class="meta-value">{{ ticket.requester }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Category</div>
+            <div class="meta-value">{{ ticket.category }}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Priority</div>
+            <div class="meta-value">
+              {% if ticket.priority == 'Urgent' %}<span class="badge b-urgent">Urgent</span>
+              {% elif ticket.priority == 'High' %}<span class="badge b-high">High</span>
+              {% elif ticket.priority == 'Medium' %}<span class="badge b-medium">Medium</span>
+              {% else %}<span class="badge b-low">Low</span>{% endif %}
+            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Assigned To</div>
+            <div class="meta-value">{{ ticket.assignee_name or 'Unassigned' }}</div>
+          </div>
+          {% if ticket.sla_due_at and ticket.status != 'Closed' %}
+          <div class="meta-item" style="grid-column: span 2;">
+            <div class="meta-label">SLA Deadline</div>
+            <div class="meta-value" style="display:flex; align-items:center; gap:10px;">
+              <span id="sla-countdown" data-due="{{ ticket.sla_due_at.isoformat() }}">—</span>
+              <span style="font-size:12px; color:var(--text-muted);">Due: {{ ticket.sla_due_at.strftime('%b %d, %H:%M') }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="desc-box">
+          <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">Description</div>
+          {{ ticket.description }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Comments -->
+    <div class="card">
+      <div class="card-header">Comments ({{ comments|length }})</div>
+      <div class="card-body">
+
+        {% if comments %}
+          {% for c in comments %}
+          <div class="comment">
+            <div class="comment-head">
+              <span class="comment-author">{{ c.username }}</span>
+              <span class="comment-time">{{ c.created_at }}</span>
+            </div>
+            <div class="comment-body">
+              {% if "Attached file:" in c.comment %}
+                {% set fname = c.comment.split("Attached file: ")[1] %}
+                Attached file: <a href="{{ url_for('download_file', filename=fname) }}" target="_blank">{{ fname }}</a>
+              {% else %}
+                {{ c.comment }}
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color:var(--muted); font-size:13px; text-align:center; padding:16px 0;">No comments yet.</p>
+        {% endif %}
+
+        {% if ticket.status != 'Closed' %}
+          <hr>
+          <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+              <label>Add a Comment</label>
+              <textarea name="comment" rows="3" placeholder="Write your comment..."></textarea>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="display:block; margin-bottom:5px;">Attach File (Optional)</label>
+              <input type="file" name="attachment" class="form-control" style="font-size: 12px; padding: 5px;">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 10px;">Post Comment</button>
+          </form>
+        {% else %}
+          <p style="text-align:center; color:var(--muted); font-size:12px; margin-top:12px;">
+            This ticket is closed. No new comments can be added.
+          </p>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: admin actions + history -->
+  <div>
+
+    {% if session.get('role') == 'admin' %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header dark">Admin Actions</div>
+      <div class="card-body">
+
+        <label style="margin-bottom:8px; display:block;">Update Status</label>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+          {% if ticket.status != 'Open' %}
+          <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
+            <input type="hidden" name="status" value="Open">
+            <button class="btn btn-outline btn-sm" style="width:100%; justify-content:center;">Set to Open</button>
+          </form>
+          {% endif %}
+          {% if ticket.status != 'In Progress' %}
+          <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
+            <input type="hidden" name="status" value="In Progress">
+            <button class="btn btn-warning btn-sm" style="width:100%; justify-content:center;">Set to In Progress</button>
+          </form>
+          {% endif %}
+          {% if ticket.status != 'Closed' %}
+          <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
+            <input type="hidden" name="status" value="Closed">
+            <button class="btn btn-success btn-sm" style="width:100%; justify-content:center;">Close Ticket</button>
+          </form>
+          {% endif %}
+        </div>
+
+        <hr>
+
+        <label style="margin-bottom:6px; display:block;">Assign To</label>
+        <form method="POST" action="{{ url_for('assign_ticket', ticket_id=ticket.id) }}"
+              style="display:flex; gap:6px; margin-bottom:14px;">
+          <select name="assignee_id" style="flex:1; padding:6px 8px; font-size:12px;">
+            <option value="">-- Unassigned --</option>
+            {% for s in staff_list %}
+              <option value="{{ s.id }}" {% if ticket.assigned_to == s.id %}selected{% endif %}>
+                {{ s.full_name or s.username }}
+              </option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-primary btn-sm">Save</button>
+        </form>
+
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-head">Ticket History</div>
+      <div class="card-body" style="padding-top: 10px;">
+        <div class="timeline">
+        {% if history %}
+          {% for h in history %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-text">
+                <strong>{{ h.by_name }}</strong>
+                {% if h.old_status %}
+                  changed status from <span class="badge-inline">{{ h.old_status }}</span> to <span class="badge-inline">{{ h.new_status }}</span>
+                {% else %}
+                  {{ h.note }}
+                {% endif %}
+              </div>
+              <div class="timeline-date">{{ h.changed_at }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color:var(--muted); font-size:13px; text-align:center; padding:10px 0;">No history yet.</p>
+        {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// SLA countdown on view_ticket
+var slaEl = document.getElementById('sla-countdown');
+if (slaEl) {
+  function updateSLA() {
+    var due  = new Date(slaEl.getAttribute('data-due'));
+    var now  = new Date();
+    var diff = (due - now) / 3600000;
+    var text, color, bg;
+    if (diff < 0) {
+      var hrs = Math.abs(diff);
+      text  = hrs < 1 ? 'Breached ' + Math.round(hrs*60) + 'm ago' : 'Breached ' + hrs.toFixed(1) + 'h ago';
+      color = '#991b1b'; bg = '#fef2f2';
+    } else if (diff <= 2) {
+      text  = (diff < 1 ? Math.round(diff*60) + 'm left' : diff.toFixed(1) + 'h left');
+      color = '#92400e'; bg = '#fffbeb';
+    } else {
+      text  = (diff < 24 ? diff.toFixed(1) + 'h left' : (diff/24).toFixed(1) + 'd left');
+      color = '#166534'; bg = '#f0fdf4';
+    }
+    slaEl.textContent = text;
+    slaEl.style.cssText = 'font-weight:700; color:' + color + '; background:' + bg +
+      '; padding:3px 10px; border-radius:6px; font-size:13px;';
+  }
+  updateSLA();
+  setInterval(updateSLA, 30000);
+}
+</script>
+
+{% endblock %}
