@@ -87,7 +87,14 @@
             <div class="comment-body">
               {% if "Attached file:" in c.comment %}
                 {% set fname = c.comment.split("Attached file: ")[1] %}
-                Attached file: <a href="{{ url_for('download_file', filename=fname) }}" target="_blank">{{ fname }}</a>
+                <div class="attachment-info">
+                  Attached file: <a href="{{ url_for('download_file', filename=fname) }}" target="_blank">{{ fname }}</a>
+                </div>
+                {% if fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')) %}
+                  <a href="{{ url_for('download_file', filename=fname) }}" target="_blank" class="attachment-preview">
+                    <img src="{{ url_for('download_file', filename=fname) }}" alt="Preview" class="thumb-img">
+                  </a>
+                {% endif %}
               {% else %}
                 {{ c.comment }}
               {% endif %}
@@ -132,18 +139,13 @@
 
         <label style="margin-bottom:8px; display:block;">Update Status</label>
         <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-          {% if ticket.status != 'Open' %}
-          <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
-            <input type="hidden" name="status" value="Open">
-            <button class="btn btn-outline btn-sm" style="width:100%; justify-content:center;">Set to Open</button>
-          </form>
-          {% endif %}
-          {% if ticket.status != 'In Progress' %}
+          {% if ticket.status == 'Open' %}
           <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
             <input type="hidden" name="status" value="In Progress">
             <button class="btn btn-warning btn-sm" style="width:100%; justify-content:center;">Set to In Progress</button>
           </form>
           {% endif %}
+
           {% if ticket.status != 'Closed' %}
           <form method="POST" action="{{ url_for('update_status', ticket_id=ticket.id) }}">
             <input type="hidden" name="status" value="Closed">
@@ -203,34 +205,5 @@
 
   </div>
 </div>
-
-<script>
-// SLA countdown on view_ticket
-var slaEl = document.getElementById('sla-countdown');
-if (slaEl) {
-  function updateSLA() {
-    var due  = new Date(slaEl.getAttribute('data-due'));
-    var now  = new Date();
-    var diff = (due - now) / 3600000;
-    var text, color, bg;
-    if (diff < 0) {
-      var hrs = Math.abs(diff);
-      text  = hrs < 1 ? 'Breached ' + Math.round(hrs*60) + 'm ago' : 'Breached ' + hrs.toFixed(1) + 'h ago';
-      color = '#991b1b'; bg = '#fef2f2';
-    } else if (diff <= 2) {
-      text  = (diff < 1 ? Math.round(diff*60) + 'm left' : diff.toFixed(1) + 'h left');
-      color = '#92400e'; bg = '#fffbeb';
-    } else {
-      text  = (diff < 24 ? diff.toFixed(1) + 'h left' : (diff/24).toFixed(1) + 'd left');
-      color = '#166534'; bg = '#f0fdf4';
-    }
-    slaEl.textContent = text;
-    slaEl.style.cssText = 'font-weight:700; color:' + color + '; background:' + bg +
-      '; padding:3px 10px; border-radius:6px; font-size:13px;';
-  }
-  updateSLA();
-  setInterval(updateSLA, 30000);
-}
-</script>
 
 {% endblock %}

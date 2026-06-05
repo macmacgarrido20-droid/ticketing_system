@@ -168,6 +168,20 @@ def login_required(role=None):
         return wrapped
     return decorator
 
+def global_admin_required():
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if "user_id" not in session:
+                flash("Please log in first.", "warning")
+                return redirect(url_for("login"))
+            if session.get("role") != "admin" or session.get("username") != "admin":
+                flash("Only the Global Admin can access this page.", "danger")
+                return redirect(url_for("admin_dashboard"))
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
 
 # ── Root ──────────────────────────────────────────────────────────────────────
 
@@ -543,16 +557,14 @@ def admin_dashboard():
     cursor.execute("""
         SELECT
             COALESCE(SUM(status != 'Closed'), 0) AS unresolved,
-            COALESCE(SUM(sla_due_at < NOW() AND status != 'Closed'), 0) AS overdue,
             COALESCE(SUM(DATE(sla_due_at) = CURDATE() AND status != 'Closed'), 0) AS due_today,
             COALESCE(SUM(status = 'Open'), 0) AS open,
-            0 AS on_hold,
-            COALESCE(SUM(assigned_to IS NULL AND status != 'Closed'), 0) AS unassigned,
             COALESCE(SUM(status = 'In Progress'), 0) AS in_progress,
+            COALESCE(SUM(assigned_to IS NULL AND status != 'Closed'), 0) AS unassigned,
             COALESCE(SUM(status = 'Closed'), 0) AS closed,
             COUNT(*) AS total,
             COALESCE(SUM(sla_due_at < NOW() AND status != 'Closed'), 0) AS sla_breached,
-            COALESCE(SUM(sla_due_at BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 2 HOUR) AND status != 'Closed'), 0) AS sla_warning
+            COALESCE(SUM(sla_due_at BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 4 HOUR) AND status != 'Closed'), 0) AS sla_warning
         FROM tickets
     """)
     stats = cursor.fetchone()
@@ -696,7 +708,7 @@ def delete_ticket(ticket_id):
 
 
 @app.route("/admin/users")
-@login_required(role="admin")
+@global_admin_required()
 def manage_users():
     search_q = request.args.get("q", "").strip()
     conn   = get_db()
@@ -720,7 +732,7 @@ def manage_users():
 
 
 @app.route("/admin/users/<int:user_id>/toggle", methods=["POST"])
-@login_required(role="admin")
+@global_admin_required()
 def toggle_user(user_id):
     if user_id == session["user_id"]:
         flash("You cannot deactivate yourself.", "warning")
@@ -735,7 +747,7 @@ def toggle_user(user_id):
 
 
 @app.route("/admin/users/<int:user_id>/make-admin", methods=["POST"])
-@login_required(role="admin")
+@global_admin_required()
 def make_admin(user_id):
     conn   = get_db()
     cursor = conn.cursor()
@@ -749,7 +761,7 @@ def make_admin(user_id):
 # ── Set Specialization (admin only) ──────────────────────────────────────────
 
 @app.route("/admin/users/<int:user_id>/set-specialization", methods=["POST"])
-@login_required(role="admin")
+@global_admin_required()
 def set_specialization(user_id):
     specialization = request.form.get("specialization") or None
     conn   = get_db()
@@ -970,7 +982,7 @@ def contacts():
 # ── Admin: Approve / Reject pending users ─────────────────────────────────────
 
 @app.route("/admin/users/<int:user_id>/approve", methods=["POST"])
-@login_required(role="admin")
+@global_admin_required()
 def approve_user(user_id):
     conn   = get_db()
     cursor = conn.cursor()
@@ -988,7 +1000,7 @@ def approve_user(user_id):
 
 
 @app.route("/admin/users/<int:user_id>/reject", methods=["POST"])
-@login_required(role="admin")
+@global_admin_required()
 def reject_user(user_id):
     conn   = get_db()
     cursor = conn.cursor()

@@ -397,6 +397,7 @@ tbody tr.overdue-row:hover { background: #fff0f0; }
 }
 .badge-open       { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .badge-inprog     { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.badge-onhold     { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
 .badge-closed     { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .badge-high       { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .badge-medium     { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
@@ -410,6 +411,7 @@ tbody tr.overdue-row:hover { background: #fff0f0; }
 /* Short aliases used in templates */
 .b-open    { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .b-inprog  { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.b-onhold  { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
 .b-closed  { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
 .b-high    { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .b-medium  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
@@ -624,6 +626,24 @@ textarea { resize: vertical; min-height: 100px; }
 .comment-body   { font-size: 13px; margin-top: 6px; line-height: 1.5; color: #334155; }
 .comment-body a { color: var(--blue); font-weight: 600; text-decoration: none; }
 .comment-body a:hover { text-decoration: underline; }
+
+/* ── Image Thumbnails ── */
+.attachment-preview {
+  margin-top: 10px;
+  display: block;
+}
+.thumb-img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+.thumb-img:hover {
+  transform: scale(1.05);
+}
 
 /* ── Pagination ── */
 .pagination {

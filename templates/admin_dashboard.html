@@ -7,30 +7,25 @@
 </div>
 
 <!-- Interactive Scorecard -->
-<div class="scorecard-bar" style="grid-template-columns: repeat(11, auto); justify-content: space-between;">
+<div class="scorecard-bar" style="grid-template-columns: repeat(9, auto); justify-content: space-between;">
   <div class="scorecard-item sc-blue">
     <div class="sc-num">{{ stats.unresolved }}</div>
     <div class="sc-label">Unresolved</div>
   </div>
   <div class="scorecard-sep"></div>
   <div class="scorecard-item sc-red">
-    <div class="sc-num">{{ stats.overdue }}</div>
-    <div class="sc-label">Overdue</div>
-  </div>
-  <div class="scorecard-sep"></div>
-  <div class="scorecard-item sc-orange">
     <div class="sc-num">{{ stats.due_today }}</div>
-    <div class="sc-label">Due today</div>
+    <div class="sc-label">Due Today</div>
   </div>
   <div class="scorecard-sep"></div>
   <div class="scorecard-item sc-amber">
     <div class="sc-num">{{ stats.open }}</div>
-    <div class="sc-label">Open</div>
+    <div class="sc-label">New / Open</div>
   </div>
   <div class="scorecard-sep"></div>
-  <div class="scorecard-item" style="color: #64748b;">
-    <div class="sc-num">{{ stats.on_hold }}</div>
-    <div class="sc-label">On hold</div>
+  <div class="scorecard-item sc-orange">
+    <div class="sc-num">{{ stats.in_progress }}</div>
+    <div class="sc-label">In Progress</div>
   </div>
   <div class="scorecard-sep"></div>
   <div class="scorecard-item sc-purple">
@@ -39,27 +34,27 @@
   </div>
 </div>
 
-<!-- SLA Health Section -->
+<!-- SLA Performance Monitoring -->
 <div style="margin-bottom:20px;">
-  <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+  <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    SLA Performance
+    SLA Service Health
   </div>
   <div class="stats-row" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat-box red">
-      <div class="stat-label">Breached</div>
-      <div class="stat-number">{{ stats.sla_breached or 0 }}</div>
-      <div style="font-size:11px; color:var(--red); margin-top:4px; font-weight:500;">Action Required</div>
+    <div class="stat-box red" title="Tickets that have already passed their deadline">
+      <div class="stat-label">Breached (Late)</div>
+      <div class="stat-number">{{ stats.sla_breached }}</div>
+      <div style="font-size:11px; color:var(--red); margin-top:4px; font-weight:600;">Immediate Action</div>
     </div>
-    <div class="stat-box orange">
-      <div class="stat-label">Warning (<2h)</div>
-      <div class="stat-number">{{ stats.sla_warning or 0 }}</div>
-      <div style="font-size:11px; color:var(--orange); margin-top:4px; font-weight:500;">Expiring Soon</div>
+    <div class="stat-box orange" title="Tickets expiring within the next 4 hours">
+      <div class="stat-label">Near Breach (<4h)</div>
+      <div class="stat-number">{{ stats.sla_warning }}</div>
+      <div style="font-size:11px; color:var(--orange); margin-top:4px; font-weight:600;">High Priority</div>
     </div>
     <div class="stat-box green">
-      <div class="stat-label">On Track</div>
-      <div class="stat-number">{{ (stats.open + stats.in_progress) - (stats.sla_breached or 0) - (stats.sla_warning or 0) }}</div>
-      <div style="font-size:11px; color:var(--green); margin-top:4px; font-weight:500;">Healthy</div>
+      <div class="stat-label">Healthy / On Track</div>
+      <div class="stat-number">{{ (stats.unresolved) - (stats.sla_breached) - (stats.sla_warning) }}</div>
+      <div style="font-size:11px; color:var(--green); margin-top:4px; font-weight:600;">Within Limits</div>
     </div>
   </div>
 </div>

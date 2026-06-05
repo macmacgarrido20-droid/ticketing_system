@@ -64,16 +64,23 @@ mssco_final/
     ├── view_ticket.html     <- View ticket, comments, history
     ├── edit_ticket.html     <- Employee: edit an open ticket
     ├── admin_dashboard.html <- Admin: all tickets and stats
-    └── manage_users.html    <- Admin: manage accounts
+    ├── admin_tickets.html   <- Admin: detailed ticket list
+    ├── manage_users.html    <- Admin: manage accounts
+    ├── profile.html         <- User profile page
+    ├── edit_profile.html    <- Edit user details
+    ├── change_password.html <- Change password page
+    └── contacts.html        <- Internal directory/contacts
 ```
 
 ---
 
 ## Features
 
-- Employee: submit, view, filter, edit their own tickets
-- Admin: view all tickets, update status, assign, delete
-- Ticket history / audit trail
-- File attachments
-- Pagination
-- User management (activate/deactivate, promote to admin)
+- **Employee**: submit, view, filter, edit their own tickets.
+- **Admin**: view all tickets, update status, assign, delete.
+- **Unified Communication**: Integrated comment and file upload system for both employees and admins.
+- **Ticket history**: Full audit trail of status changes and routing.
+- **Smart Routing**: Automatic ticket assignment based on category and specialist availability.
+- **User Management**: Activate/deactivate accounts, promote users to admin.
+- **Profile Management**: Users can update their own info and change passwords.
+- **Internal Directory**: View contact information for other staff members.
